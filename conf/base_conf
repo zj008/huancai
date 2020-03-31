@@ -1,0 +1,18 @@
+[mysql]
+host = test-mysql-master.aibyte.net
+port = 3306
+user = lottery
+pass = lottery
+db = lottery
+
+[api]
+football_earning_url = https://hongcai.163.com/api/front/expert/v2/earningRate/1
+football_renqi_url = https://hongcai.163.com/api/front/expert/v2/popularity/1
+football_expert_url = https://hongcai.163.com/api/front/expert/v3/list/1
+basket_expert_url = https://hongcai.163.com/api/front/expert/v3/list/2
+expert_articles_url = https://hongcai.163.com/api/front/expert/v2/userid/0/10
+article_detail_url = https://hongcai.163.com/api/front/thread/v4/query/articleid/0
+football_match_url = https://hongcai.163.com/api/front/matchInfo/v4/getMatchScheduleList/1?jcType=0&day=date@2000@3A00@3A00&leagueMatchIds=
+basketball_match_url = https://hongcai.163.com/api/front/matchInfo/v4/getMatchScheduleList/2?jcType=0&day=date@2000@3A00@3A00&leagueMatchIds=
+foot_news =  https://hongcai.163.com/api/front/news/getlist/1/0/
+basket_news = https://hongcai.163.com/api/front/news/getlist/2/0/
