@@ -116,7 +116,7 @@ def parse_football_match(data):
     sql.save_if_not_exist(home_team)
 
 
-    match = dict(table="football_match")
+    match = dict(table="matches")
     d = data.get("footballLiveScore")
     match["match_id"] = d.get("matchId")
     match["info_id"] = d.get("matchInfoId")
@@ -135,6 +135,7 @@ def parse_football_match(data):
     match["home_id"] = home_team.get("id")
     match["league_id"] = l.get("leagueId")
     match["league_name"] = l.get("leagueName")
+    match["match_type"] = 0
     match_time = data.get("matchTime")
     if match_time:
         match_time *= pow(10, -3)
@@ -171,17 +172,17 @@ def parse_basketball_match(data):
     home_team["name"] = g2.get("teamName")
     sql.save_if_not_exist(home_team)
 
-    match = dict(table="basketball_match")
+    match = dict(table="matches")
     m = data.get("basketballLiveScore")
     match["guest_score"] = m.get("guestScore")
     match["home_score"] = m.get("homeScore")
     match["match_id"] = m.get("matchId")
     match["info_id"] = m.get("matchInfoId")
     match["match_status"] = m.get("matchStatus")
-    match["over_status"] = m.get("overStatus")
     match["status"] = m.get("status")
     match["guest_id"] = guest_team.get("id")
     match["home_id"] = home_team.get("id")
+    match["match_type"] = 1
     match_time = data.get("matchTime")
     if match_time:
         match_time *= pow(10, -3)

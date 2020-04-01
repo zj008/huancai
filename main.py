@@ -123,6 +123,7 @@ def get_news(news_type=0, limit=None):
         news = parse_news(d)
         news["news_type"] = news_type
         get_news_content(news)
+        break
 
 
 def get_news_content(news):
@@ -130,6 +131,7 @@ def get_news_content(news):
     url = f"https://hongcai.163.com/api/ext/newsFull/{docid}.json"
     print(url)
     data = get_json_data(url)
+    print(json.dumps(data))
     if data:
         data = data.get(docid)
     else:
