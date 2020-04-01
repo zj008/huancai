@@ -3,6 +3,8 @@ from parse.parse import *
 import configparser
 from db.conn import Sql
 import datetime
+import threading
+from threading import Timer
 
 
 cf = configparser.ConfigParser()
@@ -57,7 +59,11 @@ def get_articles():
 def get_expert_articles(expert_id):
     url = cf.get("api", "expert_articles_url")
     url = url.replace("userid", str(expert_id))
-    out_sale_data = get_json_data(url).get("data").get("outSalePlanList")
+    try:
+        out_sale_data = get_json_data(url).get("data").get("outSalePlanList")
+    except AttributeError as e:
+        print(e)
+        return
     for data in out_sale_data:
         ret, article_id = parse_expert_articles(data, expert_id)
         if ret != 0:
@@ -138,14 +144,13 @@ def get_news_content(news):
     sql.save_if_not_exist(news, "docid")
     sql.close()
 
-
-if __name__ == '__main__':
+def run():
     # 获取足球专家
-    # get_expert(0)
+    get_expert(0)
     # 获取篮球专家
-    # get_expert(1)
+    get_expert(1)
     # 获取所有专家文章
-    # get_articles()
+    get_articles()
 
     # 获取专家排行榜
     sql = Sql()
@@ -163,20 +168,27 @@ if __name__ == '__main__':
     yesterday = today - delter
     tomorrow = today + delter
     after_tomorrow = tomorrow + delter
-    # # 获取足球比赛信息
-    # get_matchs(yesterday, 0)
-    # get_matchs(today, 0)
-    # get_matchs(tomorrow, 0)
-    # get_matchs(after_tomorrow, 0)
+    # 获取足球比赛信息
+    get_matchs(yesterday, 0)
+    get_matchs(today, 0)
+    get_matchs(tomorrow, 0)
+    get_matchs(after_tomorrow, 0)
 
     # 获取篮球比赛信息
-    # get_matchs(yesterday, 1)
-    # get_matchs(today, 1)
-    # get_matchs(tomorrow, 1)
-    # get_matchs(after_tomorrow, 1)
+    get_matchs(yesterday, 1)
+    get_matchs(today, 1)
+    get_matchs(tomorrow, 1)
+    get_matchs(after_tomorrow, 1)
 
     # 获取新闻资讯
-    # get_news(0)
-    # get_news(1)
+    get_news(0)
+    get_news(1)
+    t = Timer(3600*24, run)
+    with open("log.file", "w") as f:
+        f.write(datetime.datetime.now().strftime("%Y-m%-%d %X"))
+
+
+if __name__ == '__main__':
+    run()
 
 

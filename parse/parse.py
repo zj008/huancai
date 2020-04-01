@@ -1,6 +1,7 @@
 from lxml import etree
 import datetime
 from db.conn import Sql
+import json
 
 
 def parse_expert(info, cla):
@@ -48,6 +49,8 @@ def parse_expert(info, cla):
 def parse_hot_expert(data, status, index):
     expert = dict(table="hot_expert")
     expert["id"] = data.get("userId")
+    expert["popularity"] = data.get("popularity")
+    expert["earning_rate"] = data.get("earningRate")
     expert["type"] = status
     expert["top_index"] = index
     sql = Sql()
@@ -61,7 +64,16 @@ def parse_expert_articles(data, expert_id):
     match_info = data.get("earliestMatch")
 
     article = dict(table="articles")
-    article["match_id"] = match_info.get("matchInfoId")
+    article["info_id"] = match_info.get("matchInfoId")
+    article["guest_name"] = match_info.get("guestName")
+    article["home_name"] = match_info.get("homeName")
+    article["guest_score"] = match_info.get("guestScore")
+    article["home_score"] = match_info.get("homeScore")
+    article["league_id"] = match_info.get("leagueId")
+    article["league_name"] = match_info.get("leagueName")
+    article["match_status"] = match_info.get("matchStatus")
+    article["match_time"] = match_info.get("matchTime")
+    article["guest_score"] = match_info.get("guestScore")
     article["id"] = data.get("threadId")
     article["expert_id"] = expert_id
     article["is_win"] = data.get("isWin")
