@@ -3,7 +3,6 @@ from parse.parse import *
 import configparser
 from db.conn import Sql
 import datetime
-import threading
 from threading import Timer
 
 
@@ -123,47 +122,33 @@ def get_news(news_type=0, limit=None):
         news = parse_news(d)
         news["news_type"] = news_type
         get_news_content(news)
-        break
 
 
 def get_news_content(news):
     docid = news.get("docid")
     url = f"https://hongcai.163.com/api/ext/newsFull/{docid}.json"
-    print(url)
     data = get_json_data(url)
-    print(json.dumps(data))
-    if data:
-        data = data.get(docid)
-    else:
-        return
-    content = data.get("body")
-    news["content"] = content
-    for index, img in enumerate(data.get("img"), 0):
-        news["img" + str(index)] = img.get("src")
-        if index >= 10:
-            break
-    sql = Sql()
-    sql.save_if_not_exist(news, "docid")
-    sql.close()
+    prser_news_content(news, data)
+
 
 def run():
-    # 获取足球专家
-    get_expert(0)
-    # 获取篮球专家
-    get_expert(1)
-    # 获取所有专家文章
-    get_articles()
-
-    # 获取专家排行榜
-    sql = Sql()
-    try:
-        sql.execute("truncate table hot_expert")
-        sql.db.commit()
-    except Exception as e:
-        print(e)
-    sql.close()
-    get_hot_expert(0)
-    get_hot_expert(1)
+    # # 获取足球专家
+    # get_expert(0)
+    # # 获取篮球专家
+    # get_expert(1)
+    # # 获取所有专家文章
+    # get_articles()
+    #
+    # # 获取专家排行榜
+    # sql = Sql()
+    # try:
+    #     sql.execute("truncate table hot_expert")
+    #     sql.db.commit()
+    # except Exception as e:
+    #     print(e)
+    # sql.close()
+    # get_hot_expert(0)
+    # get_hot_expert(1)
 
     today = datetime.date.today()
     delter = datetime.timedelta(days=1)
@@ -182,12 +167,13 @@ def run():
     get_matchs(tomorrow, 1)
     get_matchs(after_tomorrow, 1)
 
-    # 获取新闻资讯
-    get_news(0)
-    get_news(1)
+    # # 获取新闻资讯
+    # get_news(0)
+    # get_news(1)
     t = Timer(3600*24, run)
     with open("log.file", "w") as f:
-        f.write(datetime.datetime.now().strftime("%Y-m%-%d %X"))
+        f.write(datetime.datetime.now().strftime("%Y-%m-%d %X"))
+    # t.start()
 
 
 if __name__ == '__main__':

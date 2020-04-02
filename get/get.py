@@ -16,9 +16,17 @@ def get_json_data(url):
     return res
 
 
-def get_source_data(url):
+def get_text_data(url):
     ret = requests.get(url)
     if ret.status_code != 200:
         logging.error("status code err while get " + url)
         return
     return ret.text
+
+
+def get_content_data(url):
+    ret = requests.get(url)
+    if ret.status_code != 200:
+        logging.error("status code err while get " + url)
+        return
+    return ret.content

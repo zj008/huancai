@@ -2,6 +2,14 @@ from lxml import etree
 import datetime
 from db.conn import Sql
 import json
+from get.get import get_content_data
+import configparser
+import re
+import os
+
+
+cf = configparser.ConfigParser()
+cf.read("conf/base_conf")
 
 
 def parse_expert(info, cla):
@@ -9,10 +17,8 @@ def parse_expert(info, cla):
     :param info:  专家信息
     :param cla:  0：足球专家   1：篮球专家
     """
-    print("*********", cla)
     sql = Sql()
     expert = dict(table="expert")
-    expert["avatar"] = info.get("avatar")  # 头像
     expert["avg_odds"] = info.get("avgOdds")  # 平均赔率
     expert["ball_rate"] = info.get("bAllRate")  # 最近预测结果
     expert["earning_rate"] = info.get("earningRate", 0)  # 盈利率
@@ -24,13 +30,21 @@ def parse_expert(info, cla):
     expert["trend"] = info.get("trend")  # ？？？
     expert["id"] = info.get("userId")  # 用户id
     expert["weight"] = info.get("weight")  # 体重
-
     field = "foot" if cla == 0 else "basket"  # 判断是足球专家还是篮球专家
     expert[field] = 1
+    avatar_url = info.get("avatar")
+    expert["avatar"] = str(expert.get("id")) + "." + avatar_url.split(".")[-1]
     ret = sql.save_if_not_exist(expert)
+
     if ret == 0:
         expert["table"] = "expert"
         sql.update(item=expert, field=field)
+    else:
+        avatar_path = cf.get("path", "avatar")
+        avatar_url = info.get("avatar")  # 头像
+        content = get_content_data(avatar_url)
+        if content:
+            save_pic(str(avatar_path + str(expert.get("id"))) +".jpg", content)
 
     leagueMatchs = info.get("leagueMatchStats")  # 该专家擅长的联赛信息列表
     for s in leagueMatchs:
@@ -97,24 +111,10 @@ def parse_football_match(data):
 
 
     g1 = data.get("guestTeam")
-    guest_team = dict(table="team")
-    guest_team["team_type"] = 0
-    guest_team["id"] = g1.get("teamId")
-    guest_team["full_name"] = g1.get("fullName")
-    guest_team["icon"] = g1.get("teamIcon")
-    guest_team["name"] = g1.get("teamName")
-    sql.save_if_not_exist(guest_team)
-
+    parse_team(g1)
 
     g2 = data.get("homeTeam")
-    home_team = dict(table="team")
-    home_team["team_type"] = 0
-    home_team["id"] = g2.get("teamId")
-    home_team["full_name"] = g2.get("fullName")
-    home_team["icon"] = g2.get("teamIcon")
-    home_team["name"] = g2.get("teamName")
-    sql.save_if_not_exist(home_team)
-
+    parse_team(g2)
 
     match = dict(table="matches")
     d = data.get("footballLiveScore")
@@ -131,8 +131,8 @@ def parse_football_match(data):
     match["home_red_card"] = d.get("homeRedCard")
     match["home_score"] = d.get("homeScore")
     match["home_yellow_card"] = d.get("homeYellowCard")
-    match["guest_id"] = guest_team.get("id")
-    match["home_id"] = home_team.get("id")
+    match["guest_id"] = g1.get("teamId")
+    match["home_id"] = g2.get("teamId")
     match["league_id"] = l.get("leagueId")
     match["league_name"] = l.get("leagueName")
     match["match_type"] = 0
@@ -155,22 +155,10 @@ def parse_basketball_match(data):
     sql.save_if_not_exist(league_match)
 
     g1 = data.get("guestTeam")
-    guest_team = dict(table="team")
-    guest_team["team_type"] = 0
-    guest_team["id"] = g1.get("teamId")
-    guest_team["full_name"] = g1.get("fullName")
-    guest_team["icon"] = g1.get("teamIcon")
-    guest_team["name"] = g1.get("teamName")
-    sql.save_if_not_exist(guest_team)
+    parse_team(g1)
 
     g2 = data.get("homeTeam")
-    home_team = dict(table="team")
-    home_team["team_type"] = 0
-    home_team["id"] = g2.get("teamId")
-    home_team["full_name"] = g2.get("fullName")
-    home_team["icon"] = g2.get("teamIcon")
-    home_team["name"] = g2.get("teamName")
-    sql.save_if_not_exist(home_team)
+    parse_team(g2)
 
     match = dict(table="matches")
     m = data.get("basketballLiveScore")
@@ -180,8 +168,8 @@ def parse_basketball_match(data):
     match["info_id"] = m.get("matchInfoId")
     match["match_status"] = m.get("matchStatus")
     match["status"] = m.get("status")
-    match["guest_id"] = guest_team.get("id")
-    match["home_id"] = home_team.get("id")
+    match["guest_id"] = g1.get("teamId")
+    match["home_id"] = g2.get("teamId")
     match["match_type"] = 1
     match_time = data.get("matchTime")
     if match_time:
@@ -204,3 +192,61 @@ def parse_news(data):
     news["url"] = data.get("url")
     news["docid"] = data.get("docid")
     return news
+
+
+def prser_news_content(news, data):
+    docid = news.get("docid")
+    if data:
+        data = data.get(docid)
+    else:
+        return
+    body = data.get("body")
+
+    sql = Sql()
+    ret = sql.is_exists(news, "docid")
+    if ret == 0:
+        # 去除视频标签
+        body = re.sub("\<!--VIDEO#\d+\-\-\>", "", body)
+        body = re.sub("<p>\s+<b>【欢迎搜索关注公众号“足球大会”.*", "", body)
+        # 将图片标签替换成静态图片
+        for i, img in enumerate(data.get("img"), 0):
+            src = img.get("src")
+            digit = hash(data.get("docid"))
+            _, s = divmod(digit, 26)
+            dir = chr(s + 97)
+            base = cf.get("path", "news")
+            path = os.path.join(base, dir, docid+f"_{i}."+ src.split(".")[-1])
+            img_path = path.replace("./static", "")
+            body = body.replace(img.get("ref"), f'<img src="{img_path}">')
+            img_content = get_content_data(img.get("src"))
+            save_pic(path, img_content)
+        news["content"] = body
+        sql.save(news)
+    sql.close()
+
+
+def parse_team(data):
+    sql = Sql()
+    team = dict(table="team")
+    team["team_type"] = 0
+    id = data.get("teamId")
+    team["id"] = id
+    team["full_name"] = data.get("fullName")
+    icon_url = data.get("teamIcon")
+    icon_name = ""
+    if icon_url:
+        icon_type = icon_url.split(".")[-1]
+        icon_name = f"{id}.{icon_type}"
+        team["icon"] = icon_name
+    team["name"] = data.get("teamName")
+    ret = sql.save_if_not_exist(team)
+    if ret == 1 and icon_name:
+        content = get_content_data(icon_url)
+        base_path = cf.get("path", "team")
+        icon_path = os.path.join(base_path, icon_name)
+        save_pic(icon_path, content)
+    sql.close()
+
+def save_pic(path, content):
+    with open(path, "wb") as f:
+        f.write(content)

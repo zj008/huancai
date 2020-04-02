@@ -73,6 +73,17 @@ class Sql():
         self.db.commit()
         return
 
+    def is_exists(self, item, field):
+        table = item.get("table")
+        sql = "select %s from %s where %s = '%s'" % (field, table, field, item.get(field))
+
+        self.cursor.execute(sql)
+        ret = self.cursor.fetchone()
+        if ret:
+            logging.error(field + ": " + str(item.get(field)) + field + " exists in " + table)
+            return 1
+        return 0
+
     def execute(self, sql):
         try:
             self.cursor.execute(sql)
