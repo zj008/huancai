@@ -24,7 +24,7 @@ def get_expert(cla):
         return
     expert_list = get_json_data(url).get("data").get("expertList")
     for e in expert_list:
-        parse_expert(e, cla=0)
+        parse_expert(e, cla=cla)
 
 
 def get_hot_expert(status):
@@ -59,14 +59,27 @@ def get_expert_articles(expert_id):
     url = cf.get("api", "expert_articles_url")
     url = url.replace("userid", str(expert_id))
     try:
+        data = get_json_data(url).get("data")
+        expert_detail = data.get("expertDetail")
+        expert = dict(
+            table="expert",
+            id=expert_id,
+            follower=expert_detail.get("follower"),
+            description=expert_detail.get("description")
+        )
+        sql = Sql()
+        sql.update_fields(expert)
+        sql.close()
         out_sale_data = get_json_data(url).get("data").get("outSalePlanList")
     except AttributeError as e:
         print(e)
         return
     for data in out_sale_data:
         ret, article_id = parse_expert_articles(data, expert_id)
+        ret = 1
         if ret != 0:
             get_articles_detail(article_id)
+        break
 
 
 def get_articles_detail(article_id):
@@ -75,6 +88,8 @@ def get_articles_detail(article_id):
     detail_url = cf.get("api", "article_detail_url")
     detail_url = detail_url.replace("articleid", str(article_id))
     data = get_json_data(detail_url).get("data")
+    print(data)
+    return
     content = data.get("content")
     article_detail["content"] = content
     sql = Sql()
@@ -136,9 +151,7 @@ def run():
     # get_expert(0)
     # # 获取篮球专家
     # get_expert(1)
-    # # 获取所有专家文章
-    # get_articles()
-    #
+
     # # 获取专家排行榜
     # sql = Sql()
     # try:
@@ -175,8 +188,24 @@ def run():
         f.write(datetime.datetime.now().strftime("%Y-%m-%d %X"))
     # t.start()
 
+def start_matches():
+    today = datetime.date.today()
+    delter = datetime.timedelta(days=1)
+    yesterday = today - delter
+    tomorrow = today + delter
+    after_tomorrow = tomorrow + delter
+    # 获取足球比赛信息
+    get_matchs(yesterday, 0)
+    get_matchs(today, 0)
+    get_matchs(tomorrow, 0)
+    get_matchs(after_tomorrow, 0)
+
+    # 获取篮球比赛信息
+    get_matchs(yesterday, 1)
+    get_matchs(today, 1)
+    get_matchs(tomorrow, 1)
+    get_matchs(after_tomorrow, 1)
 
 if __name__ == '__main__':
-    run()
-
+    start_matches()
 

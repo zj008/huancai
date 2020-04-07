@@ -16,6 +16,9 @@ football_match_url = https://hongcai.163.com/api/front/matchInfo/v4/getMatchSche
 basketball_match_url = https://hongcai.163.com/api/front/matchInfo/v4/getMatchScheduleList/2?jcType=0&day=date@2000@3A00@3A00&leagueMatchIds=
 foot_news =  https://hongcai.163.com/api/front/news/getlist/1/0/
 basket_news = https://hongcai.163.com/api/front/news/getlist/2/0/
+expert_league_info = https://hongcai.163.com/api/web/league/page/@/0/10
+expert_league_articles = https://hongcai.163.com/api/web/league/thread/page/expertid/leagueid/0/20
+expert_article_detail = https://hongcai.163.com/api/web/thread/query/@/0
 
 [path]
 avatar = /Users/aibyte/Documents/code/go/src/lottery/huancai/static/img/avatar/

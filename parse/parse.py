@@ -37,6 +37,7 @@ def parse_expert(info, cla):
     ret = sql.save_if_not_exist(expert)
 
     if ret == 0:
+        print("update")
         expert["table"] = "expert"
         sql.update(item=expert, field=field)
     else:
@@ -190,7 +191,18 @@ def parse_news(data):
     news["source"] = data.get("source")
     news["title"] = data.get("title")
     news["url"] = data.get("url")
-    news["docid"] = data.get("docid")
+    docid = data.get("docid")
+    news["docid"] = docid
+
+    src = data.get("imgsrc")
+    _, s = divmod(hash(news.get("docid")), 26)
+    dir = chr(s + 97)
+    base = cf.get("path", "news")
+    path = os.path.join(base, dir, docid + "." + src.split(".")[-1])
+    img_path = path.replace("./static", "")
+    img_content = get_content_data(src)
+    save_pic(path, img_content)
+    news["img"] = os.path.join(dir, docid + "." + src.split(".")[-1])
     return news
 
 
@@ -216,7 +228,7 @@ def prser_news_content(news, data):
             dir = chr(s + 97)
             base = cf.get("path", "news")
             path = os.path.join(base, dir, docid+f"_{i}."+ src.split(".")[-1])
-            img_path = path.replace("./static", "")
+            img_path = os.path.join("img/news", dir, docid+f"_{i}."+ src.split(".")[-1])
             body = body.replace(img.get("ref"), f'<img src="{img_path}">')
             img_content = get_content_data(img.get("src"))
             save_pic(path, img_content)

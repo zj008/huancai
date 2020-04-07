@@ -69,8 +69,10 @@ class Sql():
 
     def update(self, item, field):
         sql = "update %s set %s = %s where id = %s "%(item.get("table"), field, item.get(field), item.get("id"))
+        print(sql)
         self.cursor.execute(sql)
         self.db.commit()
+        print("update success")
         return
 
     def is_exists(self, item, field):
@@ -84,6 +86,18 @@ class Sql():
             return 1
         return 0
 
+    def is_exists_by_tow(self, item, field, field2):
+        table = item.get("table")
+        sql = "select %s from %s where %s = '%s' and " \
+              "%s = '%s'" % (field, table, field, item.get(field), field2, item.get(field2))
+
+        self.cursor.execute(sql)
+        ret = self.cursor.fetchone()
+        if ret:
+            logging.error(field + "=" + str(item.get(field)) + "  and " + field2 + "=" + str(item.get(field2)) + " exists in " + table)
+            return 1
+        return 0
+
     def execute(self, sql):
         try:
             self.cursor.execute(sql)
@@ -92,6 +106,18 @@ class Sql():
         except Exception as e:
             logging.error(f"error when execute sql: {sql}, error is {e.__str__()}")
             return None, e
+
+    def update_fields(self, data):
+        table = data.pop("table")
+        id = data.pop("id")
+        l = []
+        try:
+           for k, v in data.items():
+               sql = "update %s set %s = '%s' where id = %s"%(table, k, v, id)
+               self.cursor.execute(sql)
+           self.db.commit()
+        except Exception as e:
+            logging.error(f"error when update {table}, error is {e.__str__()}")
 
     def close(self):
         self.cursor.close()
