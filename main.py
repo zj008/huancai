@@ -3,7 +3,8 @@ from parse.parse import *
 import configparser
 from db.conn import Sql
 import datetime
-from threading import Timer
+from threading import Thread
+import time
 
 
 cf = configparser.ConfigParser()
@@ -16,15 +17,16 @@ def get_expert(cla):
     :param url: 请输入获取所有足球专家的url或者获取所有篮球专家的url
     :param cla: 0： 足球专家， 1： 篮球专家
     """
-    if cla == 0:
-        url = cf.get("api", "football_expert_url")
-    elif cla == 1:
-        url = cf.get("api", "basket_expert_url")
-    else:
-        return
-    expert_list = get_json_data(url).get("data").get("expertList")
-    for e in expert_list:
-        parse_expert(e, cla=cla)
+    while 1:
+        if cla == 0:
+            url = cf.get("api", "football_expert_url")
+        elif cla == 1:
+            url = cf.get("api", "basket_expert_url")
+        else:
+            return
+        expert_list = get_json_data(url).get("data").get("expertList")
+        for e in expert_list:
+            parse_expert(e, cla=cla)
 
 
 def get_hot_expert(status):
@@ -39,20 +41,24 @@ def get_hot_expert(status):
         url = cf.get("api", "football_earning_url")
     else:
         return
+    print(url)
     data = get_json_data(url).get("data")
+    print(data)
     for index, info in enumerate(data, 1):
         # print(info)
         parse_hot_expert(info, status, index)
 
 
-def get_articles():
-    sql = Sql()
-    ret, err = sql.execute("select id from expert")
-    expert_ids = []
-    if err == 0:
-        expert_ids = [id[0] for id in ret]
-    for id in expert_ids:
-        get_expert_articles(id)
+def get_articles(t):
+    while 1:
+        sql = Sql()
+        ret, err = sql.execute("select id from expert")
+        expert_ids = []
+        if err == 0:
+            expert_ids = [id[0] for id in ret]
+        for id in expert_ids:
+            get_expert_articles(id)
+        time.sleep(t)
 
 
 def get_expert_articles(expert_id):
@@ -79,7 +85,6 @@ def get_expert_articles(expert_id):
         ret = 1
         if ret != 0:
             get_articles_detail(article_id)
-        break
 
 
 def get_articles_detail(article_id):
@@ -88,13 +93,13 @@ def get_articles_detail(article_id):
     detail_url = cf.get("api", "article_detail_url")
     detail_url = detail_url.replace("articleid", str(article_id))
     data = get_json_data(detail_url).get("data")
-    print(data)
-    return
+    print(json.dumps(data, ensure_ascii=False))
     content = data.get("content")
     article_detail["content"] = content
     sql = Sql()
     sql.save_if_not_exist(article_detail)
     sql.close()
+    parse_match_list(data.get("matchList"), article_id)
 
 
 def get_matchs(date, match_type):
@@ -146,66 +151,63 @@ def get_news_content(news):
     prser_news_content(news, data)
 
 
+def start_get_matches(t):
+    while 1:
+        today = datetime.date.today()
+        delter = datetime.timedelta(days=1)
+        yesterday = today - delter
+        tomorrow = today + delter
+        after_tomorrow = tomorrow + delter
+        # 获取足球比赛信息
+        get_matchs(yesterday, 0)
+        get_matchs(today, 0)
+        get_matchs(tomorrow, 0)
+        get_matchs(after_tomorrow, 0)
+
+        # 获取篮球比赛信息
+        get_matchs(yesterday, 1)
+        get_matchs(today, 1)
+        get_matchs(tomorrow, 1)
+        get_matchs(after_tomorrow, 1)
+        time.sleep(t)
+
+def start_get_news(t):
+    while 1:
+        get_news(0, 100)
+        get_news(1, 100)
+        time.sleep(t)
+
+def start_get_expert(t):
+    while 1:
+        get_expert(0)
+        get_expert(1)
+        time.sleep(t)
+
+
+def start_get_hot_expert(t):
+    while 1:
+        sql = Sql()
+        try:
+            sql.execute("truncate table hot_expert")
+            sql.db.commit()
+        except Exception as e:
+            print(e)
+        sql.close()
+        get_hot_expert(0)
+        get_hot_expert(1)
+        time.sleep(t)
+
+
 def run():
-    # # 获取足球专家
-    # get_expert(0)
-    # # 获取篮球专家
-    # get_expert(1)
+    t_list = []
+    # t_list.append(Thread(target=start_get_expert,args=(3600*24*2,)))
+    # t_list.append(Thread(target=start_get_hot_expert, args=(3600*24,)))
+    t_list.append(Thread(target=get_articles, args=(3600*24,)))
+    # t_list.append(Thread(target=start_get_news, args=(3600*24,)))
+    # t_list.append(Thread(target=start_get_matches, args=(3600*24, )))
+    for t in t_list:
+        t.start()
 
-    # # 获取专家排行榜
-    # sql = Sql()
-    # try:
-    #     sql.execute("truncate table hot_expert")
-    #     sql.db.commit()
-    # except Exception as e:
-    #     print(e)
-    # sql.close()
-    # get_hot_expert(0)
-    # get_hot_expert(1)
-
-    today = datetime.date.today()
-    delter = datetime.timedelta(days=1)
-    yesterday = today - delter
-    tomorrow = today + delter
-    after_tomorrow = tomorrow + delter
-    # 获取足球比赛信息
-    get_matchs(yesterday, 0)
-    get_matchs(today, 0)
-    get_matchs(tomorrow, 0)
-    get_matchs(after_tomorrow, 0)
-
-    # 获取篮球比赛信息
-    get_matchs(yesterday, 1)
-    get_matchs(today, 1)
-    get_matchs(tomorrow, 1)
-    get_matchs(after_tomorrow, 1)
-
-    # # 获取新闻资讯
-    # get_news(0)
-    # get_news(1)
-    t = Timer(3600*24, run)
-    with open("log.file", "w") as f:
-        f.write(datetime.datetime.now().strftime("%Y-%m-%d %X"))
-    # t.start()
-
-def start_matches():
-    today = datetime.date.today()
-    delter = datetime.timedelta(days=1)
-    yesterday = today - delter
-    tomorrow = today + delter
-    after_tomorrow = tomorrow + delter
-    # 获取足球比赛信息
-    get_matchs(yesterday, 0)
-    get_matchs(today, 0)
-    get_matchs(tomorrow, 0)
-    get_matchs(after_tomorrow, 0)
-
-    # 获取篮球比赛信息
-    get_matchs(yesterday, 1)
-    get_matchs(today, 1)
-    get_matchs(tomorrow, 1)
-    get_matchs(after_tomorrow, 1)
 
 if __name__ == '__main__':
-    start_matches()
-
+    run()

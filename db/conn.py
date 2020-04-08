@@ -30,6 +30,7 @@ class Sql():
         except Exception as e:
             logging.error("save error: error info : " + e.__str__())
             self.db.rollback()
+        logging.info("save success")
         return
 
     def save_if_not_exist(self, item, field="id"):

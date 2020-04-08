@@ -1,7 +1,5 @@
-from lxml import etree
 import datetime
 from db.conn import Sql
-import json
 from get.get import get_content_data
 import configparser
 import re
@@ -37,7 +35,6 @@ def parse_expert(info, cla):
     ret = sql.save_if_not_exist(expert)
 
     if ret == 0:
-        print("update")
         expert["table"] = "expert"
         sql.update(item=expert, field=field)
     else:
@@ -72,33 +69,126 @@ def parse_hot_expert(data, status, index):
     sql.save(expert)
 
 
+def get_expert_league_articles(expert_id, league_id):
+    url = cf.get("api", "expert_league_articles")
+    url = url.replace("expertid", str(expert_id)).replace("leagueid", str(league_id))
+    for a in data:
+        sql = Sql()
+        article = dict(table="articles")
+        article["id"] = a.get("threadId")
+        article["title"] = a.get("threadTitle")
+        article["expert_id"] = expert_id
+        article["lottery_category_id"] = a.get("lotteryCategoryId")
+        article["lottery_category_name"] = a.get("lotteryCategoryName")
+        article["is_win"] = a.get("isWin")
+        article["publish_time"] = a.get("publishTime")
+        article["prpriceice"] = a.get("price")
+        article["league_id"] = league_id
+
+        for m in a.get("matchList"):
+            match = dict(table="matches")
+            match["category_id"] = m.get("categoryId")
+            match["category_name"] = m.get("categoryName")
+            match["info_id"] = m.get("matchInfoId")
+            match["match_status"] = m.get("matchStatus")
+            if match.get("match_status") == 3:
+                match["status"] = "完"
+            else:
+                match["status"] = "未"
+            match_time = m.get("matchTime")
+            match_time = match_time.replace("/", "-").replace("/", "-")
+            if not re.search("\d{4}", match_time):
+                match_time = str(datetime.date.today().year) + "-" + match_time
+            match["match_time"] = match_time
+
+            league = dict(table="leaguematch")
+            league_id = m.get("leagueId")
+            league_name = m.get("leagueName")
+            league["id"] = league_id
+            league["name"] = league_name
+            sql.save_if_not_exist(league)
+
+            match["league_id"] = league_id
+            match["league_name"] = league_name
+            match["guest_name"] = m.get("guestName")
+            match["guest_score"] = m.get("guestScore")
+            match["home_name"] = m.get("homeName")
+            match["home_score"] = m.get("homeScore")
+            sql.save_if_not_exist(match, "info_id")
+
+            article_match = dict(table="article_match")
+            article_match["article_id"] = article["id"]
+            article_match["info_id"] = match["info_id"]
+            if not sql.is_exists_by_tow(article_match, "article_id", "info_id"):
+                sql.save(article_match)
+
+        ret = sql.save_if_not_exist(article)
+        if ret == 0:
+            article["table"] = "articles"
+            sql.update(article, "league_id")
+
+        sql.close()
+
+
 def parse_expert_articles(data, expert_id):
-
     sql = Sql()
-
     match_info = data.get("earliestMatch")
-
     article = dict(table="articles")
-    article["info_id"] = match_info.get("matchInfoId")
-    article["guest_name"] = match_info.get("guestName")
-    article["home_name"] = match_info.get("homeName")
-    article["guest_score"] = match_info.get("guestScore")
-    article["home_score"] = match_info.get("homeScore")
-    article["league_id"] = match_info.get("leagueId")
-    article["league_name"] = match_info.get("leagueName")
-    article["match_status"] = match_info.get("matchStatus")
-    article["match_time"] = match_info.get("matchTime")
-    article["guest_score"] = match_info.get("guestScore")
     article["id"] = data.get("threadId")
     article["expert_id"] = expert_id
-    article["is_win"] = data.get("isWin")
+    article["title"] = data.get("title")
     article["lottery_category_id"] = data.get("lotteryCategoryId")
     article["lottery_category_name"] = data.get("lotteryCategoryName")
+    article["is_win"] = data.get("isWin")
     article["price"] = data.get("price")
-    article["publish_time"] = data.get("publishTime")
-    article["title"] = data.get("title")
+    publish_time = data.get("publishTime")
+    if not re.search("/d{4}", publish_time):
+        publish_time = "2020-" + publish_time
+    article["publish_time"] = publish_time
+    article["league_id"] = match_info.get("leagueId")
     ret = sql.save_if_not_exist(article)
     return ret, article.get("id")
+
+
+def parse_match_list(match_list, article_id):
+    sql = Sql()
+    for m in match_list:
+        match = dict(table="matches")
+        match["category_id"] = m.get("categoryId")
+        match["category_name"] = m.get("categoryName")
+        match["info_id"] = m.get("matchInfoId")
+        match["match_status"] = m.get("matchStatus")
+        if match.get("match_status") == 3:
+            match["status"] = "完"
+        else:
+            match["status"] = "未"
+        match_time = m.get("matchTime")
+        match_time = match_time.replace("/", "-").replace("/", "-")
+        if not re.search("\d{4}", match_time):
+            match_time = str(datetime.date.today().year) + "-" + match_time
+        match["match_time"] = match_time
+
+        league = dict(table="leaguematch")
+        league_id = m.get("leagueId")
+        league_name = m.get("leagueName")
+        league["id"] = league_id
+        league["name"] = league_name
+        sql.save_if_not_exist(league)
+
+        match["league_id"] = league_id
+        match["league_name"] = league_name
+        match["guest_name"] = m.get("guestName")
+        match["guest_score"] = m.get("guestScore")
+        match["home_name"] = m.get("homeName")
+        match["home_score"] = m.get("homeScore")
+        sql.save_if_not_exist(match, "info_id")
+
+        article_match = dict(table="article_match")
+        article_match["article_id"] = article_id
+        article_match["info_id"] = match["info_id"]
+        if not sql.is_exists_by_tow(article_match, "article_id", "info_id"):
+            sql.save(article_match)
+    sql.close()
 
 
 def parse_football_match(data):
