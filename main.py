@@ -202,8 +202,8 @@ def run():
     t_list = []
     # t_list.append(Thread(target=start_get_expert,args=(3600*24*2,)))
     # t_list.append(Thread(target=start_get_hot_expert, args=(3600*24,)))
-    t_list.append(Thread(target=get_articles, args=(3600*24,)))
-    # t_list.append(Thread(target=start_get_news, args=(3600*24,)))
+    # t_list.append(Thread(target=get_articles, args=(3600*24,)))
+    t_list.append(Thread(target=start_get_news, args=(3600*24,)))
     # t_list.append(Thread(target=start_get_matches, args=(3600*24, )))
     for t in t_list:
         t.start()

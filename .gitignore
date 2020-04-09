@@ -1,4 +1,3 @@
 /venv
-static
 log.file
-test.py
+test/test.py
