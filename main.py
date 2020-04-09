@@ -18,16 +18,15 @@ def get_expert(cla):
     :param url: 请输入获取所有足球专家的url或者获取所有篮球专家的url
     :param cla: 0： 足球专家， 1： 篮球专家
     """
-    while 1:
-        if cla == 0:
-            url = cf.get("api", "football_expert_url")
-        elif cla == 1:
-            url = cf.get("api", "basket_expert_url")
-        else:
-            return
-        expert_list = get_json_data(url).get("data").get("expertList")
-        for e in expert_list:
-            parse_expert(e, cla=cla)
+    if cla == 0:
+        url = cf.get("api", "football_expert_url")
+    elif cla == 1:
+        url = cf.get("api", "basket_expert_url")
+    else:
+        return
+    expert_list = get_json_data(url).get("data").get("expertList")
+    for e in expert_list:
+        parse_expert(e, cla=cla)
 
 
 def get_hot_expert(status):

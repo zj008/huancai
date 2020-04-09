@@ -44,18 +44,18 @@ def parse_expert(info, cla):
         if content:
             save_pic(str(avatar_path + str(expert.get("id"))) +".jpg", content)
 
-    leagueMatchs = info.get("leagueMatchStats")  # 该专家擅长的联赛信息列表
-    for s in leagueMatchs:
-        league_match = dict(table="leaguematch")
-        league_match["id"] = s.get("leagueMatchId")
-        league_match["name"] = s.get("leagueMatchName")
-        sql.save_if_not_exist(league_match)
-
-        expert_leaguematch = dict(table="expert_leaguematch")
-        expert_leaguematch["expert_id"] = expert.get("id")
-        expert_leaguematch["leaguematch_id"] = s.get("leagueMatchId")
-        sql.save(expert_leaguematch)
-    sql.close()
+    # leagueMatchs = info.get("leagueMatchStats")  # 该专家擅长的联赛信息列表
+    # for s in leagueMatchs:
+    #     league_match = dict(table="leaguematch")
+    #     league_match["id"] = s.get("leagueMatchId")
+    #     league_match["name"] = s.get("leagueMatchName")
+    #     sql.save_if_not_exist(league_match)
+    #
+    #     expert_leaguematch = dict(table="expert_leaguematch")
+    #     expert_leaguematch["expert_id"] = expert.get("id")
+    #     expert_leaguematch["leaguematch_id"] = s.get("leagueMatchId")
+    #     sql.save(expert_leaguematch)
+    # sql.close()
 
 
 def parse_hot_expert(data, status, index):
