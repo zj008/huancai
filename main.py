@@ -5,6 +5,7 @@ from db.conn import Sql
 import datetime
 from threading import Thread
 import time
+import logging
 
 
 cf = configparser.ConfigParser()
@@ -93,7 +94,6 @@ def get_articles_detail(article_id):
     detail_url = cf.get("api", "article_detail_url")
     detail_url = detail_url.replace("articleid", str(article_id))
     data = get_json_data(detail_url).get("data")
-    print(json.dumps(data, ensure_ascii=False))
     content = data.get("content")
     article_detail["content"] = content
     sql = Sql()
@@ -153,6 +153,7 @@ def get_news_content(news):
 
 def start_get_matches(t):
     while 1:
+        logging.info("start get matches")
         today = datetime.date.today()
         delter = datetime.timedelta(days=1)
         yesterday = today - delter
@@ -173,12 +174,14 @@ def start_get_matches(t):
 
 def start_get_news(t):
     while 1:
+        logging.info("start get news")
         get_news(0, 100)
         get_news(1, 100)
         time.sleep(t)
 
 def start_get_expert(t):
     while 1:
+        logging.info("start get expert")
         get_expert(0)
         get_expert(1)
         time.sleep(t)
@@ -186,6 +189,7 @@ def start_get_expert(t):
 
 def start_get_hot_expert(t):
     while 1:
+        logging.info("start get hot expert")
         sql = Sql()
         try:
             sql.execute("truncate table hot_expert")
@@ -200,11 +204,11 @@ def start_get_hot_expert(t):
 
 def run():
     t_list = []
-    # t_list.append(Thread(target=start_get_expert,args=(3600*24*2,)))
+    t_list.append(Thread(target=start_get_expert,args=(3600*24*2,)))
     # t_list.append(Thread(target=start_get_hot_expert, args=(3600*24,)))
-    # t_list.append(Thread(target=get_articles, args=(3600*24,)))
+    t_list.append(Thread(target=get_articles, args=(3600*24,)))
     t_list.append(Thread(target=start_get_news, args=(3600*24,)))
-    # t_list.append(Thread(target=start_get_matches, args=(3600*24, )))
+    t_list.append(Thread(target=start_get_matches, args=(3600*24, )))
     for t in t_list:
         t.start()
 
