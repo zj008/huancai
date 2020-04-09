@@ -1,4 +1,3 @@
 pymysql
 configparser
 requests
-requests

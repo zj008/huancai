@@ -27,7 +27,12 @@ expert_league_info = https://hongcai.163.com/api/web/league/page/@/0/10
 expert_league_articles = https://hongcai.163.com/api/web/league/thread/page/expertid/leagueid/0/20
 expert_article_detail = https://hongcai.163.com/api/web/thread/query/@/0
 
-[path]
+[path1]
 avatar = /Users/aibyte/Documents/code/go/src/huancai/static/img/avatar/
 news = /Users/aibyte/Documents/code/go/src/huancai/static/img/news/
 team = /Users/aibyte/Documents/code/go/src/huancai/static/img/team/
+
+[path]
+avatar = /home/huancai/static/img/avatar/
+news = /home/huancai/static/img/news/
+team = /home/huancai/static/img/team/
