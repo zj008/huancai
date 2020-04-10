@@ -58,6 +58,7 @@ def get_articles(t):
             expert_ids = [id[0] for id in ret]
         for id in expert_ids:
             get_expert_articles(id)
+            return
         time.sleep(t)
 
 
@@ -73,9 +74,9 @@ def get_expert_articles(expert_id):
             follower=expert_detail.get("follower"),
             description=expert_detail.get("description")
         )
-        sql = Sql()
-        sql.update_fields(expert)
-        sql.close()
+        # sql = Sql()
+        # sql.update_fields(expert)
+        # sql.close()
         out_sale_data = get_json_data(url).get("data").get("outSalePlanList")
     except AttributeError as e:
         print(e)
@@ -88,6 +89,7 @@ def get_expert_articles(expert_id):
 
 
 def get_articles_detail(article_id):
+    print(article_id)
     article_detail = dict(table="article_details")
     article_detail["id"] = article_id
     detail_url = cf.get("api", "article_detail_url")
@@ -95,9 +97,9 @@ def get_articles_detail(article_id):
     data = get_json_data(detail_url).get("data")
     content = data.get("content")
     article_detail["content"] = content
-    sql = Sql()
-    sql.save_if_not_exist(article_detail)
-    sql.close()
+    # sql = Sql()
+    # sql.save_if_not_exist(article_detail)
+    # sql.close()
     parse_match_list(data.get("matchList"), article_id)
 
 

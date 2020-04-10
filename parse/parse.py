@@ -1,9 +1,10 @@
 import datetime
 from db.conn import Sql
-from get.get import get_content_data
+from get.get import *
 import configparser
 import re
 import os
+import json
 
 
 cf = configparser.ConfigParser()
@@ -72,6 +73,11 @@ def parse_hot_expert(data, status, index):
 def get_expert_league_articles(expert_id, league_id):
     url = cf.get("api", "expert_league_articles")
     url = url.replace("expertid", str(expert_id)).replace("leagueid", str(league_id))
+    data = get_json_data(url)
+    if data:
+        data = data.get("data")
+    else:
+        return
     for a in data:
         sql = Sql()
         article = dict(table="articles")
@@ -131,7 +137,7 @@ def get_expert_league_articles(expert_id, league_id):
 
 
 def parse_expert_articles(data, expert_id):
-    sql = Sql()
+    # sql = Sql()
     match_info = data.get("earliestMatch")
     article = dict(table="articles")
     article["id"] = data.get("threadId")
@@ -146,14 +152,16 @@ def parse_expert_articles(data, expert_id):
         publish_time = "2020-" + publish_time
     article["publish_time"] = publish_time
     article["league_id"] = match_info.get("leagueId")
-    ret = sql.save_if_not_exist(article)
-    return ret, article.get("id")
+    # ret = sql.save_if_not_exist(article)
+    print(json.dumps(data, ensure_ascii=False))
+    return 0, article.get("id")
 
 
 def parse_match_list(match_list, article_id):
-    sql = Sql()
+    # sql = Sql()
     for m in match_list:
         match = dict(table="matches")
+        # print(json.dumps(m,ensure_ascii=False))
         match["category_id"] = m.get("categoryId")
         match["category_name"] = m.get("categoryName")
         match["info_id"] = m.get("matchInfoId")
@@ -167,28 +175,37 @@ def parse_match_list(match_list, article_id):
         if not re.search("\d{4}", match_time):
             match_time = str(datetime.date.today().year) + "-" + match_time
         match["match_time"] = match_time
-
         league = dict(table="leaguematch")
         league_id = m.get("leagueId")
         league_name = m.get("leagueName")
         league["id"] = league_id
         league["name"] = league_name
-        sql.save_if_not_exist(league)
+        # sql.save_if_not_exist(league)
 
         match["league_id"] = league_id
         match["league_name"] = league_name
-        match["guest_name"] = m.get("guestName")
+        g1 = m.get("guestTeam")
+        # parse_team(g1)
+        g2 = m.get("homeTeam")
+        # parse_team(g2)
+        match["guest_name"] = g1.get("teamName")
+        match["home_name"] = g2.get("teamName")
+        match["guest_id"] = g1.get("teamId")
+        match["home_id"] = g2.get("teamId")
+        # match["guest_name"] = m.get("guestName")
         match["guest_score"] = m.get("guestScore")
-        match["home_name"] = m.get("homeName")
+        # match["home_name"] = m.get("homeName")
         match["home_score"] = m.get("homeScore")
-        sql.save_if_not_exist(match, "info_id")
+        print(match)
+        # sql.save_if_not_exist(match, "info_id")
 
         article_match = dict(table="article_match")
         article_match["article_id"] = article_id
         article_match["info_id"] = match["info_id"]
-        if not sql.is_exists_by_tow(article_match, "article_id", "info_id"):
-            sql.save(article_match)
-    sql.close()
+        print("article_match", article_match)
+        # if not sql.is_exists_by_tow(article_match, "article_id", "info_id"):
+        #     sql.save(article_match)
+    # sql.close()
 
 
 def parse_football_match(data):
