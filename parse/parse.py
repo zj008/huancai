@@ -137,7 +137,7 @@ def get_expert_league_articles(expert_id, league_id):
 
 
 def parse_expert_articles(data, expert_id):
-    # sql = Sql()
+    sql = Sql()
     match_info = data.get("earliestMatch")
     article = dict(table="articles")
     article["id"] = data.get("threadId")
@@ -148,17 +148,14 @@ def parse_expert_articles(data, expert_id):
     article["is_win"] = data.get("isWin")
     article["price"] = data.get("price")
     publish_time = data.get("publishTime")
-    if not re.search("/d{4}", publish_time):
-        publish_time = "2020-" + publish_time
     article["publish_time"] = publish_time
     article["league_id"] = match_info.get("leagueId")
-    # ret = sql.save_if_not_exist(article)
-    print(json.dumps(data, ensure_ascii=False))
+    ret = sql.save_if_not_exist(article)
     return 0, article.get("id")
 
 
 def parse_match_list(match_list, article_id):
-    # sql = Sql()
+    sql = Sql()
     for m in match_list:
         match = dict(table="matches")
         # print(json.dumps(m,ensure_ascii=False))
@@ -170,7 +167,8 @@ def parse_match_list(match_list, article_id):
             match["status"] = "完"
         else:
             match["status"] = "未"
-        match_time = m.get("matchTime")
+        # match_time = m.get("matchTime")
+        match_time = m.get("matchTimeAc")
         match_time = match_time.replace("/", "-").replace("/", "-")
         if not re.search("\d{4}", match_time):
             match_time = str(datetime.date.today().year) + "-" + match_time
@@ -180,14 +178,14 @@ def parse_match_list(match_list, article_id):
         league_name = m.get("leagueName")
         league["id"] = league_id
         league["name"] = league_name
-        # sql.save_if_not_exist(league)
+        sql.save_if_not_exist(league)
 
         match["league_id"] = league_id
         match["league_name"] = league_name
         g1 = m.get("guestTeam")
-        # parse_team(g1)
+        parse_team(g1)
         g2 = m.get("homeTeam")
-        # parse_team(g2)
+        parse_team(g2)
         match["guest_name"] = g1.get("teamName")
         match["home_name"] = g2.get("teamName")
         match["guest_id"] = g1.get("teamId")
@@ -196,16 +194,15 @@ def parse_match_list(match_list, article_id):
         match["guest_score"] = m.get("guestScore")
         # match["home_name"] = m.get("homeName")
         match["home_score"] = m.get("homeScore")
-        print(match)
-        # sql.save_if_not_exist(match, "info_id")
+        sql.save_if_not_exist(match, "info_id")
 
         article_match = dict(table="article_match")
         article_match["article_id"] = article_id
         article_match["info_id"] = match["info_id"]
         print("article_match", article_match)
-        # if not sql.is_exists_by_tow(article_match, "article_id", "info_id"):
-        #     sql.save(article_match)
-    # sql.close()
+        if not sql.is_exists_by_tow(article_match, "article_id", "info_id"):
+            sql.save(article_match)
+    sql.close()
 
 
 def parse_football_match(data):

@@ -1,2 +1,5 @@
 /venv
 log.file
+lottery.sql
+static
+test/t1.py
